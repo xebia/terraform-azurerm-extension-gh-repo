@@ -10,7 +10,7 @@ output "repository_url" {
 
 output "repository_clone_url" {
   description = "The clone URL of the GitHub repository."
-  value       = github_repository.spoke_repo.clone_url
+  value       = github_repository.spoke_repo.git_clone_url
 }
 
 output "federated_credential_main_id" {
