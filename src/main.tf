@@ -40,14 +40,14 @@ resource "azuread_application_federated_identity_credential" "spoke_github_main"
 
 # Create federated identity credential for environment-specific deployments
 resource "azuread_application_federated_identity_credential" "spoke_github_environment" {
-  count = var.environment != null && var.environment != "" ? 1 : 0
+  for_each = toset(var.environments)
   
   application_id = data.azuread_application.spoke_app.id
-  display_name   = "${var.github_repo_name}-${var.environment}-federated-credential"
-  description    = "Federated identity credential for ${var.github_repo_name} ${var.environment} environment"
+  display_name   = "${var.github_repo_name}-${each.key}-federated-credential"
+  description    = "Federated identity credential for ${var.github_repo_name} ${each.key} environment"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = var.github_oidc_issuer
-  subject        = "repo:${var.github_organization}/${var.github_repo_name}:environment:${var.environment}"
+  subject        = "repo:${var.github_organization}/${var.github_repo_name}:environment:${each.key}"
 }
 
 # Create GitHub repository secrets for Azure authentication

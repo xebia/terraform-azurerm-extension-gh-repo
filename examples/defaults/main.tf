@@ -22,7 +22,7 @@ module "github_repo_extension" {
   service_principal_client_id = azuread_application.example.client_id
   azure_tenant_id             = data.azurerm_client_config.current.tenant_id
   azure_subscription_id       = data.azurerm_subscription.current.subscription_id
-  environment                 = "dev"
+  environments                = ["dev", "test", "prod"]
 
   # GitHub repository configuration
   github_organization      = "xebia"  # Change this to your organization

@@ -12,3 +12,8 @@ output "federated_credential_main_id" {
   description = "The ID of the federated identity credential for main branch"
   value       = module.github_repo_extension.federated_credential_main_id
 }
+
+output "federated_credential_environment_ids" {
+  description = "The IDs of the federated identity credentials for environments"
+  value       = module.github_repo_extension.federated_credential_environment_ids
+}

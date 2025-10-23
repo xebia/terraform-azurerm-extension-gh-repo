@@ -14,8 +14,8 @@ variable "azure_subscription_id" {
   type        = string
 }
 
-variable "environment" {
-  description = "The environment name (e.g., dev, test, prod) - used for federated credentials."
-  type        = string
-  default     = null
+variable "environments" {
+  description = "List of environment names (e.g., [\"dev\", \"test\", \"prod\"]) - used for federated credentials."
+  type        = list(string)
+  default     = []
 }
