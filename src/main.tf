@@ -22,10 +22,6 @@ resource "github_repository" "spoke_repo" {
 
   # Topics/tags for the repository
   topics = ["azure", "terraform", "spoke-deployment"]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # Create federated identity credential for main branch
