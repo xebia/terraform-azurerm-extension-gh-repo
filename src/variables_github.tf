@@ -25,7 +25,7 @@ variable "github_repo_visibility" {
   description = "The visibility of the repository. Can be 'public', 'private', or 'internal'."
   type        = string
   default     = "private"
-  
+
   validation {
     condition     = contains(["public", "private", "internal"], var.github_repo_visibility)
     error_message = "Repository visibility must be 'public', 'private', or 'internal'."

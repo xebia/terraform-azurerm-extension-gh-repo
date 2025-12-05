@@ -5,17 +5,17 @@ data "azuread_application" "spoke_app" {
 
 # Create GitHub repository
 resource "github_repository" "spoke_repo" {
-  name         = var.github_repo_name
-  description  = var.github_repo_description
-  visibility   = var.github_repo_visibility
-  auto_init    = var.github_repo_auto_init
+  name        = var.github_repo_name
+  description = var.github_repo_description
+  visibility  = var.github_repo_visibility
+  auto_init   = var.github_repo_auto_init
 
   # Basic repository settings
   allow_merge_commit     = true
   allow_squash_merge     = true
   allow_rebase_merge     = true
   delete_branch_on_merge = true
-  
+
   # Archive settings
   archived           = false
   archive_on_destroy = true
@@ -37,7 +37,7 @@ resource "azuread_application_federated_identity_credential" "spoke_github_main"
 # Create federated identity credential for environment-specific deployments
 resource "azuread_application_federated_identity_credential" "spoke_github_environment" {
   for_each = toset(var.environments)
-  
+
   application_id = data.azuread_application.spoke_app.id
   display_name   = "${var.github_repo_name}-${each.key}-federated-credential"
   description    = "Federated identity credential for ${var.github_repo_name} ${each.key} environment"
