@@ -31,6 +31,12 @@ resource "github_repository" "spoke_repo" {
   topics = ["azure", "terraform", "spoke-deployment"]
 }
 
+# Handle migration from non-count to count resource
+moved {
+  from = github_repository.spoke_repo
+  to   = github_repository.spoke_repo[0]
+}
+
 # Reference either the newly created repository or the existing one
 locals {
   github_repo = try(github_repository.spoke_repo[0], data.github_repository.existing_repo)
