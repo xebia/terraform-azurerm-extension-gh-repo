@@ -3,8 +3,15 @@ data "azuread_application" "spoke_app" {
   client_id = var.service_principal_client_id
 }
 
-# Create GitHub repository
+# Check if the GitHub repository already exists
+data "github_repository" "existing_repo" {
+  full_name = "${var.github_organization}/${var.github_repo_name}"
+}
+
+# Create GitHub repository only if it doesn't already exist
 resource "github_repository" "spoke_repo" {
+  count = try(data.github_repository.existing_repo.id != null ? 0 : 1, 1)
+
   name        = var.github_repo_name
   description = var.github_repo_description
   visibility  = var.github_repo_visibility
@@ -24,43 +31,45 @@ resource "github_repository" "spoke_repo" {
   topics = ["azure", "terraform", "spoke-deployment"]
 }
 
-# Create federated identity credential for main branch
-resource "azuread_application_federated_identity_credential" "spoke_github_main" {
-  application_id = data.azuread_application.spoke_app.id
-  display_name   = "${var.github_repo_name}-main-federated-credential"
-  description    = "Federated identity credential for ${var.github_repo_name} main branch"
-  audiences      = ["api://AzureADTokenExchange"]
-  issuer         = var.github_oidc_issuer
-  subject        = "repo:${var.github_organization}/${var.github_repo_name}:ref:refs/heads/main"
+# Reference either the newly created repository or the existing one
+locals {
+  github_repo = try(github_repository.spoke_repo[0], data.github_repository.existing_repo)
+}
+
+# Create GitHub repository environment
+resource "github_repository_environment" "spoke_environment" {
+  environment = var.github_environment_name
+  repository  = local.github_repo.name
 }
 
 # Create federated identity credential for environment-specific deployments
 resource "azuread_application_federated_identity_credential" "spoke_github_environment" {
-  for_each = toset(var.environments)
-
   application_id = data.azuread_application.spoke_app.id
-  display_name   = "${var.github_repo_name}-${each.key}-federated-credential"
-  description    = "Federated identity credential for ${var.github_repo_name} ${each.key} environment"
+  display_name   = "${var.github_repo_name}-${var.github_environment_name}-federated-credential"
+  description    = "Federated identity credential for ${var.github_repo_name} ${var.github_environment_name} environment"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = var.github_oidc_issuer
-  subject        = "repo:${var.github_organization}/${var.github_repo_name}:environment:${each.key}"
+  subject        = "repo:${var.github_organization}/${var.github_repo_name}:environment:${var.github_environment_name}"
 }
 
-# Create GitHub repository secrets for Azure authentication
-resource "github_actions_secret" "azure_client_id" {
-  repository      = github_repository.spoke_repo.name
+# Create GitHub environment secrets for Azure authentication
+resource "github_actions_environment_secret" "azure_client_id" {
+  environment     = github_repository_environment.spoke_environment.environment
+  repository      = local.github_repo.name
   secret_name     = "AZURE_CLIENT_ID"
   plaintext_value = var.service_principal_client_id
 }
 
-resource "github_actions_secret" "azure_tenant_id" {
-  repository      = github_repository.spoke_repo.name
+resource "github_actions_environment_secret" "azure_tenant_id" {
+  environment     = github_repository_environment.spoke_environment.environment
+  repository      = local.github_repo.name
   secret_name     = "AZURE_TENANT_ID"
   plaintext_value = var.azure_tenant_id
 }
 
-resource "github_actions_secret" "azure_subscription_id" {
-  repository      = github_repository.spoke_repo.name
+resource "github_actions_environment_secret" "azure_subscription_id" {
+  environment     = github_repository_environment.spoke_environment.environment
+  repository      = local.github_repo.name
   secret_name     = "AZURE_SUBSCRIPTION_ID"
   plaintext_value = var.azure_subscription_id
 }

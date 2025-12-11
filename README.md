@@ -5,16 +5,18 @@ Extension to connect an Azure Spoke deployment to a GitHub repository with OIDC 
 ## Overview
 
 This Terraform module creates:
-- A GitHub repository with sensible default settings
-- Azure AD federated identity credentials for OIDC authentication
-- GitHub Actions secrets for Azure authentication
+- A GitHub repository with sensible default settings (or uses an existing repository)
+- A GitHub repository environment for storing environment-specific secrets
+- Azure AD federated identity credentials for OIDC authentication to the environment
+- GitHub Actions environment secrets for Azure authentication
 
 ## Features
 
-- **OIDC Authentication**: Sets up federated identity credentials for both main branch and environment-specific deployments
+- **Existing Repository Support**: Automatically detects and uses existing repositories, preventing creation errors
+- **OIDC Authentication**: Sets up federated identity credentials tied to environment deployments
+- **Environment Secrets**: Stores Azure credentials as environment-level secrets for better security isolation
 - **Simple Configuration**: Minimal JSON configuration required
-- **Azure Integration**: Automatically configures GitHub secrets for Azure authentication
-- **Extensible**: Ready for future enhancements
+- **Azure Integration**: Automatically configures GitHub environment secrets for Azure authentication
 
 ## Usage
 
@@ -45,13 +47,13 @@ When these are defined, you can omit `organization` and `oidc_issuer` from your 
     "github": {
       "enabled": true,
       "repository_name": "my-repo",
-      "environments": ["dev", "test", "prod"]
+      "environment_name": "dev"
     }
   }
 }
 ```
 
-**Simple configuration:**
+**Full configuration:**
 
 ```json
 {
@@ -59,25 +61,10 @@ When these are defined, you can omit `organization` and `oidc_issuer` from your 
     "github": {
       "enabled": true,
       "organization": "your-github-org",
-      "repository_name": "my-repo"
-    }
-  }
-}
-```
-
-**With optional overrides:**
-
-```json
-{
-  "extensions": {
-    "github": {
-      "enabled": true,
-      "organization": "my-custom-org",
-      "oidc_issuer": "https://github.your-enterprise.com/_services/token",
       "repository_name": "my-repo",
+      "environment_name": "prod",
       "repository_description": "My Azure workload repository",
-      "repository_visibility": "private",
-      "environments": ["dev", "test", "prod"]
+      "repository_visibility": "private"
     }
   }
 }
@@ -99,16 +86,16 @@ module "github_repo_extension" {
   service_principal_client_id = var.service_principal_client_id
   azure_tenant_id             = var.azure_tenant_id
   azure_subscription_id       = var.azure_subscription_id
-  
+
   # Required: GitHub configuration
-  github_organization = "your-github-org"
-  github_repo_name    = "your-repo-name"
-  
+  github_organization   = "your-github-org"
+  github_repo_name      = "your-repo-name"
+  github_environment_name = "prod"
+
   # Optional: Additional configuration
   github_repo_description = "My Azure workload repository"
   github_repo_visibility  = "private"
   github_oidc_issuer      = "https://token.actions.githubusercontent.com"
-  environments            = ["dev", "test", "prod"]
 }
 ```
 
@@ -123,6 +110,7 @@ module "github_repo_extension" {
 | `azure_subscription_id` | The Azure subscription ID | `string` |
 | `github_organization` | The GitHub organization name | `string` |
 | `github_repo_name` | The GitHub repository name | `string` |
+| `github_environment_name` | The GitHub repository environment name (e.g., 'dev', 'prod') | `string` |
 
 ### Optional Variables
 
@@ -132,7 +120,6 @@ module "github_repo_extension" {
 | `github_repo_visibility` | Repository visibility (public/private/internal) | `string` | `"private"` |
 | `github_repo_auto_init` | Initialize with README | `bool` | `true` |
 | `github_oidc_issuer` | GitHub OIDC issuer URL | `string` | `"https://token.actions.githubusercontent.com"` |
-| `environments` | List of environment names for federated credentials | `list(string)` | `[]` |
 
 ## GitHub Enterprise Configuration
 
@@ -170,17 +157,14 @@ module "github_repo_extension" {
 
 ## OIDC Configuration
 
-This module creates two types of federated identity credentials:
+This module creates a federated identity credential tied to the GitHub environment:
 
-1. **Main Branch**: For deployments from the main branch
-   - Subject: `repo:org/repo:ref:refs/heads/main`
-
-2. **Environments**: For environment-specific deployments (when `environments` are specified)
-   - Subject: `repo:org/repo:environment:environment-name` (one credential per environment)
+- **Environment**: For environment-specific deployments
+  - Subject: `repo:org/repo:environment:environment-name`
 
 ## GitHub Actions Usage
 
-After the module creates your repository, you can use the following in your GitHub Actions workflows:
+After the module creates your repository and environment, you can use the following in your GitHub Actions workflows:
 
 ```yaml
 name: Deploy to Azure
@@ -195,16 +179,17 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
+
       - name: Deploy resources
         run: |
           echo "Successfully authenticated to Azure!"
@@ -218,8 +203,8 @@ jobs:
 | `repository_name` | The name of the GitHub repository |
 | `repository_url` | The URL of the GitHub repository |
 | `repository_clone_url` | The clone URL of the repository |
-| `federated_credential_main_id` | ID of the main branch federated credential |
-| `federated_credential_environment_ids` | IDs of the environment federated credentials | Map of environment names to credential IDs |
+| `github_environment_name` | The name of the GitHub environment |
+| `federated_credential_environment_id` | ID of the environment federated credential |
 
 ## Examples
 

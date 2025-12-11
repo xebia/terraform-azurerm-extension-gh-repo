@@ -37,3 +37,8 @@ variable "github_repo_auto_init" {
   type        = bool
   default     = true
 }
+
+variable "github_environment_name" {
+  description = "The name of the GitHub repository environment (e.g., 'dev', 'prod'). This environment will be created in the repository for storing environment-specific secrets and configuring OIDC."
+  type        = string
+}
