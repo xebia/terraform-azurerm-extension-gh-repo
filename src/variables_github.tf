@@ -42,3 +42,9 @@ variable "github_environment_name" {
   description = "The name of the GitHub repository environment (e.g., 'dev', 'prod'). This environment will be created in the repository for storing environment-specific secrets and configuring OIDC."
   type        = string
 }
+
+variable "github_create_repo" {
+  description = "Whether to create a new GitHub repository. Set to false if the repository already exists and you only want to manage the environment and secrets."
+  type        = bool
+  default     = true
+}
