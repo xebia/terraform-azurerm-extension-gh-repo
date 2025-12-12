@@ -3,12 +3,14 @@ data "azuread_application" "spoke_app" {
   client_id = var.service_principal_client_id
 }
 
-# Create GitHub repository
+# Create GitHub repository only if configured to create
 resource "github_repository" "spoke_repo" {
-  name        = var.github_repo_name
-  description = var.github_repo_description
-  visibility  = var.github_repo_visibility
-  auto_init   = var.github_repo_auto_init
+  count = var.create_repo ? 1 : 0
+
+  name        = var.repo_name
+  description = var.repo_description
+  visibility  = var.repo_visibility
+  auto_init   = var.repo_auto_init
 
   # Basic repository settings
   allow_merge_commit     = true
@@ -24,43 +26,45 @@ resource "github_repository" "spoke_repo" {
   topics = ["azure", "terraform", "spoke-deployment"]
 }
 
-# Create federated identity credential for main branch
-resource "azuread_application_federated_identity_credential" "spoke_github_main" {
-  application_id = data.azuread_application.spoke_app.id
-  display_name   = "${var.github_repo_name}-main-federated-credential"
-  description    = "Federated identity credential for ${var.github_repo_name} main branch"
-  audiences      = ["api://AzureADTokenExchange"]
-  issuer         = var.github_oidc_issuer
-  subject        = "repo:${var.github_organization}/${var.github_repo_name}:ref:refs/heads/main"
+# Reference either the newly created repository or the existing one
+locals {
+  github_repo = var.create_repo ? github_repository.spoke_repo[0] : var.repo_name
+}
+
+# Create GitHub repository environment
+resource "github_repository_environment" "spoke_environment" {
+  environment = var.environment_name
+  repository  = local.github_repo.name
 }
 
 # Create federated identity credential for environment-specific deployments
 resource "azuread_application_federated_identity_credential" "spoke_github_environment" {
-  for_each = toset(var.environments)
-
   application_id = data.azuread_application.spoke_app.id
-  display_name   = "${var.github_repo_name}-${each.key}-federated-credential"
-  description    = "Federated identity credential for ${var.github_repo_name} ${each.key} environment"
+  display_name   = "${local.github_repo.name}-${github_repository_environment.spoke_environment.environment}-federated-credential"
+  description    = "Federated identity credential for ${local.github_repo.name} ${github_repository_environment.spoke_environment.environment} environment"
   audiences      = ["api://AzureADTokenExchange"]
-  issuer         = var.github_oidc_issuer
-  subject        = "repo:${var.github_organization}/${var.github_repo_name}:environment:${each.key}"
+  issuer         = var.oidc_issuer
+  subject        = "repo:${var.organization}/${local.github_repo.name}:environment:${github_repository_environment.spoke_environment.environment}"
 }
 
-# Create GitHub repository secrets for Azure authentication
-resource "github_actions_secret" "azure_client_id" {
-  repository      = github_repository.spoke_repo.name
+# Create GitHub environment secrets for Azure authentication
+resource "github_actions_environment_secret" "azure_client_id" {
+  environment     = github_repository_environment.spoke_environment.environment
+  repository      = local.github_repo.name
   secret_name     = "AZURE_CLIENT_ID"
   plaintext_value = var.service_principal_client_id
 }
 
-resource "github_actions_secret" "azure_tenant_id" {
-  repository      = github_repository.spoke_repo.name
+resource "github_actions_environment_secret" "azure_tenant_id" {
+  environment     = github_repository_environment.spoke_environment.environment
+  repository      = local.github_repo.name
   secret_name     = "AZURE_TENANT_ID"
   plaintext_value = var.azure_tenant_id
 }
 
-resource "github_actions_secret" "azure_subscription_id" {
-  repository      = github_repository.spoke_repo.name
+resource "github_actions_environment_secret" "azure_subscription_id" {
+  environment     = github_repository_environment.spoke_environment.environment
+  repository      = local.github_repo.name
   secret_name     = "AZURE_SUBSCRIPTION_ID"
   plaintext_value = var.azure_subscription_id
 }
