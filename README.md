@@ -10,7 +10,7 @@ This Terraform module creates:
 - Azure AD federated identity credentials for OIDC authentication to the environment
 - GitHub Actions environment secrets for Azure authentication
 
-The module can either create a new repository or work with an existing one by setting the `github_create_repo` variable.
+The module can either create a new repository or work with an existing one by setting the `create_repo` variable.
 
 ## Features
 
@@ -48,7 +48,7 @@ When these are defined, you can omit `organization` and `oidc_issuer` from your 
   "extensions": {
     "github": {
       "enabled": true,
-      "repository_name": "my-repo",
+      "repo_name": "my-repo",
       "environment_name": "dev"
     }
   }
@@ -63,10 +63,12 @@ When these are defined, you can omit `organization` and `oidc_issuer` from your 
     "github": {
       "enabled": true,
       "organization": "your-github-org",
-      "repository": "my-repo",
+      "repo_name": "my-repo",
       "environment_name": "prod",
-      "repository_description": "My Azure workload repository",
-      "repository_visibility": "private"
+      "repo_description": "My Azure workload repository",
+      "repo_visibility": "private",
+      "repo_auto_init": false,
+      "create_repo": false
     }
   }
 }
@@ -81,7 +83,7 @@ When these are defined, you can omit `organization` and `oidc_issuer` from your 
       "enabled": true,
       "repository": "existing-repo",
       "environment_name": "prod",
-      "create_repository": false
+      "create_repo": false
     }
   }
 }
