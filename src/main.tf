@@ -32,12 +32,6 @@ resource "github_repository" "spoke_repo" {
   topics = ["azure", "terraform", "spoke-deployment"]
 }
 
-# Handle migration from non-count to count resource
-moved {
-  from = github_repository.spoke_repo
-  to   = github_repository.spoke_repo[0]
-}
-
 # Reference either the newly created repository or the existing one
 locals {
   github_repo = var.create_repo ? github_repository.spoke_repo[0] : data.github_repository.existing_repo[0]
@@ -47,16 +41,18 @@ locals {
 resource "github_repository_environment" "spoke_environment" {
   environment = var.environment_name
   repository  = local.github_repo.name
+
+  depends_on = [ github_repository.spoke_repo, data.github_repository.existing_repo ]
 }
 
 # Create federated identity credential for environment-specific deployments
 resource "azuread_application_federated_identity_credential" "spoke_github_environment" {
   application_id = data.azuread_application.spoke_app.id
-  display_name   = "${var.repo_name}-${var.environment_name}-federated-credential"
-  description    = "Federated identity credential for ${var.repo_name} ${var.environment_name} environment"
+  display_name   = "${local.github_repo.name}-${github_repository_environment.spoke_environment.environment}-federated-credential"
+  description    = "Federated identity credential for ${local.github_repo.name} ${github_repository_environment.spoke_environment.environment} environment"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = var.oidc_issuer
-  subject        = "repo:${var.organization}/${var.repo_name}:environment:${var.environment_name}"
+  subject        = "repo:${var.organization}/${local.github_repo.name}:environment:${github_repository_environment.spoke_environment.environment}"
 }
 
 # Create GitHub environment secrets for Azure authentication
