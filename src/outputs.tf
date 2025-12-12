@@ -13,7 +13,7 @@ output "repository_clone_url" {
   value       = local.github_repo.git_clone_url
 }
 
-output "github_environment_name" {
+output "environment_name" {
   description = "The name of the GitHub environment."
   value       = github_repository_environment.spoke_environment.environment
 }

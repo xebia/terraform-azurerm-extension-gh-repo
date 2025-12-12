@@ -98,7 +98,7 @@ The extension is automatically included via `ext_github.tf` when enabled in the 
 ### Direct module usage
 
 ```hcl
-module "github_repo_extension" {
+module "repo_extension" {
   source = "github.com/xebia/terraform-azurerm-extension-gh-repo//src"
 
   # Required: Global variables from spoke deployment
@@ -107,30 +107,30 @@ module "github_repo_extension" {
   azure_subscription_id       = var.azure_subscription_id
 
   # Required: GitHub configuration
-  github_organization     = "your-github-org"
-  github_repo_name        = "your-repo-name"
-  github_environment_name = "prod"
+  organization     = "your-github-org"
+  repo_name        = "your-repo-name"
+  environment_name = "prod"
 
   # Optional: Additional configuration
-  github_create_repo      = true  # Set to false to use existing repository
+  create_repo      = true  # Set to false to use existing repository
 | Variable | Description | Type |
 |----------|-------------|------|
 | `service_principal_client_id` | The client ID of the spoke's service principal | `string` |
 | `azure_tenant_id` | The Azure tenant ID | `string` |
 | `azure_subscription_id` | The Azure subscription ID | `string` |
-| `github_organization` | The GitHub organization name | `string` |
-| `github_repo_name` | The GitHub repository name | `string` |
-| `github_environment_name` | The GitHub repository environment name (e.g., 'dev', 'prod') | `string` |
+| `organization` | The GitHub organization name | `string` |
+| `repo_name` | The GitHub repository name | `string` |
+| `environment_name` | The GitHub repository environment name (e.g., 'dev', 'prod') | `string` |
 
 ### Optional Variables
 
 | Variable | Description | Type | Default |
 |----------|-------------|------|---------|
-| `github_create_repo` | Whether to create the repository (true) or use existing (false) | `bool` | `true` |
-| `github_repo_description` | Repository description | `string` | `"Repository managed by Azure Spoke deployment"` |
-| `github_repo_visibility` | Repository visibility (public/private/internal) | `string` | `"private"` |
-| `github_repo_auto_init` | Initialize with README | `bool` | `true` |
-| `github_oidc_issuer` | GitHub OIDC issuer URL | `string` | `"https://token.actions.githubusercontent.com"` |
+| `create_repo` | Whether to create the repository (true) or use existing (false) | `bool` | `true` |
+| `repo_description` | Repository description | `string` | `"Repository managed by Azure Spoke deployment"` |
+| `repo_visibility` | Repository visibility (public/private/internal) | `string` | `"private"` |
+| `repo_auto_init` | Initialize with README | `bool` | `true` |
+| `oidc_issuer` | GitHub OIDC issuer URL | `string` | `"https://token.actions.githubusercontent.com"` |
 
 ## GitHub Enterprise Configuration
 
@@ -155,9 +155,9 @@ Or in direct module usage:
 module "github_repo_extension" {
   source = "github.com/xebia/terraform-azurerm-extension-gh-repo//src"
 
-  github_organization = "your-enterprise-org"
-  github_oidc_issuer  = "https://github.your-enterprise.com/_services/token"
-  github_repo_name    = "your-repo-name"
+  organization = "your-enterprise-org"
+  oidc_issuer  = "https://github.your-enterprise.com/_services/token"
+  repo_name    = "your-repo-name"
   # ... other variables
 }
 ```
@@ -214,7 +214,7 @@ jobs:
 | `repository_name` | The name of the GitHub repository |
 | `repository_url` | The URL of the GitHub repository |
 | `repository_clone_url` | The clone URL of the repository |
-| `github_environment_name` | The name of the GitHub environment |
+| `environment_name` | The name of the GitHub environment |
 | `federated_credential_environment_id` | ID of the environment federated credential |
 
 ## Examples
