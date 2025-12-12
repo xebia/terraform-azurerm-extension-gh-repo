@@ -3,6 +3,12 @@ data "azuread_application" "spoke_app" {
   client_id = var.service_principal_client_id
 }
 
+# Check if the GitHub repository already exists (only used as fallback when resource not in state)
+data "github_repository" "existing_repo" {
+  count     = var.create_repo ? 0 : 1
+  full_name = "${var.organization}/${var.repo_name}"
+}
+
 # Create GitHub repository only if configured to create
 resource "github_repository" "spoke_repo" {
   count = var.create_repo ? 1 : 0
@@ -28,7 +34,7 @@ resource "github_repository" "spoke_repo" {
 
 # Reference either the newly created repository or the existing one
 locals {
-  github_repo = var.create_repo ? github_repository.spoke_repo[0] : var.repo_name
+  github_repo = var.create_repo ? github_repository.spoke_repo[0] : data.github_repository.existing_repo[0]
 }
 
 # Create GitHub repository environment
