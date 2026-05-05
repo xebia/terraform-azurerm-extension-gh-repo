@@ -32,7 +32,7 @@ resource "github_repository" "spoke_repo" {
   topics = ["azure", "terraform", "spoke-deployment"]
 
   lifecycle {
-    ignore_changes = [ has_issues ]
+    ignore_changes = [ has_issues, description, topics, visibility, has_wiki, has_projects, has_discussions, allow_merge_commit, allow_squash_merge, allow_rebase_merge, delete_branch_on_merge, archived ]
   }
 }
 
