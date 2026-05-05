@@ -30,6 +30,10 @@ resource "github_repository" "spoke_repo" {
 
   # Topics/tags for the repository
   topics = ["azure", "terraform", "spoke-deployment"]
+
+  lifecycle {
+    ignore_changes = [ has_issues ]
+  }
 }
 
 # Reference either the newly created repository or the existing one
