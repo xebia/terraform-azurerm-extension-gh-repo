@@ -48,3 +48,9 @@ variable "create_repo" {
   type        = bool
   default     = true
 }
+
+variable "create_immutable_federated_credential" {
+  description = "Whether to also create the federated identity credential in GitHub's immutable subject form, the default for repositories created after 2026-07-15. Set to false for GitHub Enterprise Server, or where the workload token cannot read the organization."
+  type        = bool
+  default     = true
+}

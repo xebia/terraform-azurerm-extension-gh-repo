@@ -131,6 +131,7 @@ module "repo_extension" {
 | `repo_visibility` | Repository visibility (public/private/internal) | `string` | `"private"` |
 | `repo_auto_init` | Initialize with README | `bool` | `true` |
 | `oidc_issuer` | GitHub OIDC issuer URL | `string` | `"https://token.actions.githubusercontent.com"` |
+| `create_immutable_federated_credential` | Also create the credential in the immutable subject form (see OIDC Configuration) | `bool` | `true` |
 
 ## GitHub Enterprise Configuration
 
@@ -172,6 +173,43 @@ This module creates a federated identity credential tied to the GitHub environme
 
 - **Environment**: For environment-specific deployments
   - Subject: `repo:org/repo:environment:environment-name`
+
+### Immutable subjects
+
+GitHub issues OIDC tokens for some repositories using the *immutable* subject form,
+which carries numeric organization and repository ids alongside the names:
+
+```
+repo:my-org@5749167/my-repo@8980542:environment:prod
+```
+
+This is the default for repositories created after 2026-07-15, and for repositories
+renamed or transferred after that date. Older repositories keep the plain form unless
+they opt in, at repository or organization level. The two forms never match each
+other, so a credential written in the wrong one fails every login with
+`AADSTS700213: No matching federated identity record found`.
+
+GitHub does report which form applies. `GET /repos/<owner>/<repo>/actions/oidc/customization/sub`
+returns `use_immutable_subject` and `sub_claim_prefix`, the latter being the exact
+prefix that repository's tokens will carry. The Terraform provider, however, exposes
+neither field — as of 6.9.0 its subject customization data source returns only
+`use_default` and `include_claim_keys` — so the module cannot branch on it without
+reaching outside the provider.
+
+Both credentials are therefore written, which is correct whichever form the repository
+uses and does not depend on a provider version. The one that does not match is never
+presented, so it grants nothing.
+
+Two ways to check a repository: read `sub_claim_prefix` from the endpoint above, or
+read the subject out of an `AADSTS700213` error, which prints the one the token
+actually presented.
+
+Set `create_immutable_federated_credential = false` to write only the plain form.
+Reading the organization's numeric id requires the token to be able to see the
+organization; a token scoped to a single repository cannot.
+
+See [Immutable subject claims for GitHub Actions OIDC tokens](https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/)
+and the [OpenID Connect reference](https://docs.github.com/en/actions/reference/security/oidc).
 
 ## GitHub Actions Usage
 
@@ -216,6 +254,7 @@ jobs:
 | `repository_clone_url` | The clone URL of the repository |
 | `environment_name` | The name of the GitHub environment |
 | `federated_credential_environment_id` | ID of the environment federated credential |
+| `federated_credential_environment_immutable_id` | ID of the immutable-subject credential, or `null` when disabled |
 
 ## Examples
 

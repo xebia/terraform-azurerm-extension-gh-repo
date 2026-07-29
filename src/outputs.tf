@@ -22,3 +22,8 @@ output "federated_credential_environment_id" {
   description = "The ID of the federated identity credential for the environment."
   value       = azuread_application_federated_identity_credential.spoke_github_environment.id
 }
+
+output "federated_credential_environment_immutable_id" {
+  description = "The ID of the immutable-subject federated identity credential for the environment."
+  value       = try(azuread_application_federated_identity_credential.spoke_github_environment_immutable[0].id, null)
+}

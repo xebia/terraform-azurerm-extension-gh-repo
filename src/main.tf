@@ -9,6 +9,13 @@ data "github_repository" "existing_repo" {
   full_name = "${var.organization}/${var.repo_name}"
 }
 
+# Organization numeric id for the immutable subject below (summary_only = one GET /orgs/<org>).
+data "github_organization" "this" {
+  count        = var.create_immutable_federated_credential ? 1 : 0
+  name         = var.organization
+  summary_only = true
+}
+
 # Create GitHub repository only if configured to create
 resource "github_repository" "spoke_repo" {
   count = var.create_repo ? 1 : 0
@@ -55,6 +62,19 @@ resource "azuread_application_federated_identity_credential" "spoke_github_envir
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = var.oidc_issuer
   subject        = "repo:${var.organization}/${local.github_repo.name}:environment:${github_repository_environment.spoke_environment.environment}"
+}
+
+# Same credential in GitHub's immutable subject form (repo:<org>@<org_id>/<repo>@<repo_id>:environment:<env>).
+# Both forms are written because the provider cannot tell which one a repo uses; the non-matching one is never presented.
+resource "azuread_application_federated_identity_credential" "spoke_github_environment_immutable" {
+  count = var.create_immutable_federated_credential ? 1 : 0
+
+  application_id = data.azuread_application.spoke_app.id
+  display_name   = "${local.github_repo.name}-${github_repository_environment.spoke_environment.environment}-federated-credential-immutable"
+  description    = "Federated identity credential (immutable subject) for ${local.github_repo.name} ${github_repository_environment.spoke_environment.environment} environment"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = var.oidc_issuer
+  subject        = "repo:${var.organization}@${data.github_organization.this[0].id}/${local.github_repo.name}@${local.github_repo.repo_id}:environment:${github_repository_environment.spoke_environment.environment}"
 }
 
 # Create GitHub environment secrets for Azure authentication
