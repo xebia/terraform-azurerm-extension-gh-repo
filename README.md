@@ -192,8 +192,7 @@ other, so a credential written in the wrong one fails every login with
 GitHub does report which form applies. `GET /repos/<owner>/<repo>/actions/oidc/customization/sub`
 returns `use_immutable_subject` and `sub_claim_prefix`, the latter being the exact
 prefix that repository's tokens will carry. The Terraform provider, however, exposes
-neither field — as of 6.9.0 its subject customization data source returns only
-`use_default` and `include_claim_keys` — so the module cannot branch on it without
+neither field from this endpoint, so the module cannot branch on it without
 reaching outside the provider.
 
 Both credentials are therefore written, which is correct whichever form the repository
