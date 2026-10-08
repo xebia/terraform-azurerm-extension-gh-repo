@@ -20,6 +20,45 @@ The module can either create a new repository or work with an existing one by se
 - **Simple Configuration**: Minimal JSON configuration required
 - **Azure Integration**: Automatically configures GitHub environment secrets for Azure authentication
 
+## Environment Protection Ownership
+
+The platform manages the environment name, repository association, Azure OIDC
+credentials, and Azure authentication secrets. Workload teams manage deployment
+protections in GitHub Settings > Environments: required reviewers, wait timers,
+self-review restrictions, administrator bypass, and deployment branch policies.
+
+The extension ignores changes to these protection settings on existing
+environments, preserving workload-team changes during subsequent spoke deployments.
+New environments have the provider's default protections until the workload team
+configures them. Preservation does not protect against environment deletion or
+replacement, including changes to the environment name or repository. Review such
+plans explicitly before applying them.
+
+### Regression Check
+
+Use a disposable repository and environment. Deploy the extension, then configure
+at least one required reviewer in GitHub and record the reviewer IDs and other
+protection settings. With no protection change requested, generate a refreshed
+plan from the consuming spoke deployment and check it with `jq`:
+
+```sh
+terraform plan -out=redeploy.tfplan
+terraform show -json redeploy.tfplan > redeploy-plan.json
+jq -e -f /path/to/terraform-azurerm-extension-gh-repo/tests/environment-protections.jq redeploy-plan.json
+```
+
+The check must print `true` and exit successfully. It rejects changes to the five
+workload-owned protection fields and deletion or replacement of existing managed
+environments. It also requires an existing environment with configured reviewers,
+so a creation-only plan cannot produce a passing result. Treat saved plans and
+their JSON as sensitive because they can contain secret values.
+
+After reviewing the complete plan and obtaining approval, apply that saved plan
+in the disposable environment and verify the reviewer IDs and other protections
+in GitHub remain unchanged. The plan check alone does not verify provider apply
+behavior. Repeat with changes to platform-owned Azure secrets to verify those
+updates remain manageable without changing protections.
+
 ## Usage
 
 ## Configuration
