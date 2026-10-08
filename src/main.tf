@@ -39,7 +39,7 @@ resource "github_repository" "spoke_repo" {
   topics = ["azure", "terraform", "spoke-deployment"]
 
   lifecycle {
-    ignore_changes = [ has_issues, description, topics, visibility, has_wiki, has_projects, has_discussions, allow_merge_commit, allow_squash_merge, allow_rebase_merge, delete_branch_on_merge, archived ]
+    ignore_changes = [has_issues, description, topics, visibility, has_wiki, has_projects, has_discussions, allow_merge_commit, allow_squash_merge, allow_rebase_merge, delete_branch_on_merge, archived]
   }
 }
 
@@ -52,6 +52,16 @@ locals {
 resource "github_repository_environment" "spoke_environment" {
   environment = var.environment_name
   repository  = local.github_repo.name
+
+  lifecycle {
+    ignore_changes = [
+      reviewers,
+      wait_timer,
+      prevent_self_review,
+      can_admins_bypass,
+      deployment_branch_policy,
+    ]
+  }
 }
 
 # Create federated identity credential for environment-specific deployments
